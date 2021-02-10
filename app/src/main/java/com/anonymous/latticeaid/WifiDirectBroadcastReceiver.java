@@ -14,6 +14,12 @@ import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+
 public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
 
     private WifiP2pManager mManager;
@@ -66,6 +72,7 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
             }
             NetworkInfo networkInfo = intent.getParcelableExtra(WifiP2pManager.EXTRA_NETWORK_INFO);
 
+            assert networkInfo != null;
             if (networkInfo.isConnected()) {
                 mManager.requestConnectionInfo(mChannel, mActivity.connectionInfoListener);
             } else {
@@ -91,5 +98,6 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
         dialog = builder.create();
         dialog.show();
     }
+
 
 }

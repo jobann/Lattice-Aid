@@ -18,6 +18,8 @@ import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -27,7 +29,13 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +56,12 @@ public class MainActivity extends AppCompatActivity {
     List<WifiP2pDevice> peers = new ArrayList<>();
     String[] deviceNameArray;
     WifiP2pDevice[] deviceArray;
+
+    static final int MESSAGE_READ = 1;
+
+    ServerClass serverClass;
+    ClientClass clientClass;
+    SendReceive sendReceive;
 
 
     @Override
@@ -79,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        //On clicking List item (Peer list)
+        //onClicking List item (Peer list)
         listView.setOnItemClickListener((parent, view, position, id) -> {
             final WifiP2pDevice device = deviceArray[position];
             WifiP2pConfig config = new WifiP2pConfig();
@@ -98,9 +112,33 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        // onClicking send button
+        btnSend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String msg = writeMsg.getText().toString();
+                //connectionStatus.setText(msg);
+                sendReceive.write(msg.getBytes());
+            }
+        });
+
     }
 
+    Handler handler = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(@NonNull Message msg) {
 
+            switch (msg.what) {
+                case MESSAGE_READ:
+                    byte[] readBuff = (byte[]) msg.obj;
+                    String tempMsg = new String(readBuff, 0, msg.arg1);
+                    read_msg_box.setText(tempMsg);
+                    break;
+            }
+
+            return true;
+        }
+    });
 
     @Override
     protected void onStart() {
@@ -198,10 +236,14 @@ public class MainActivity extends AppCompatActivity {
         public void onConnectionInfoAvailable(WifiP2pInfo info) {
             InetAddress groupOwnerAddress = info.groupOwnerAddress;
 
-            if(info.groupFormed && info.isGroupOwner){
+            if (info.groupFormed && info.isGroupOwner) {
                 connectionStatus.setText("Host");
-            }else if(info.groupFormed){
+                serverClass = new ServerClass();
+                serverClass.start();
+            } else if (info.groupFormed) {
                 connectionStatus.setText("Client");
+                clientClass = new ClientClass(groupOwnerAddress);
+                clientClass.start();
             }
 
         }
@@ -217,4 +259,92 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+
+    //Server class
+    public class ServerClass extends Thread {
+        ServerSocket serverSocket;
+        Socket socket;
+
+        @Override
+        public void run() {
+            try {
+                serverSocket = new ServerSocket(8888);
+                socket = serverSocket.accept();
+                sendReceive = new SendReceive(socket);
+                sendReceive.start();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    //Client class
+    public class ClientClass extends Thread {
+
+        Socket socket;
+        String hostAdd;
+
+        public ClientClass(InetAddress hostAddress) {
+            hostAdd = hostAddress.getHostAddress();
+            socket = new Socket();
+        }
+
+        @Override
+        public void run() {
+            try {
+                socket.connect(new InetSocketAddress(hostAdd, 8888), 500);
+                sendReceive = new SendReceive(socket);
+                sendReceive.start();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    //SendReceive class to handle data transfer
+    public class SendReceive extends Thread {
+        private final Socket socket;
+        private InputStream inputStream;
+        private OutputStream outputStream;
+
+        //Constructor
+        public SendReceive(Socket skt) {
+            socket = skt;
+            try {
+                inputStream = socket.getInputStream();
+                outputStream = socket.getOutputStream();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }// end of constructor
+
+        @Override
+        public void run() {
+            byte[] buffer = new byte[1024];
+            int bytes;
+
+            while (socket != null){
+                try {
+                    bytes = inputStream.read(buffer);
+                    if(bytes>0){
+                        handler.obtainMessage(MESSAGE_READ, bytes, -1, buffer).sendToTarget();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }//end of run
+
+        public void write(byte[] bytes){
+            try {
+                outputStream.write(bytes);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+
 }
