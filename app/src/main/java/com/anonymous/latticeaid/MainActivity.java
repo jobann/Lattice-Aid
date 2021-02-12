@@ -17,8 +17,10 @@ import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.view.View;
 import android.widget.AdapterView;
@@ -62,6 +64,8 @@ public class MainActivity extends AppCompatActivity {
     ServerClass serverClass;
     ClientClass clientClass;
     SendReceive sendReceive;
+
+    static Boolean isWriting = false;
 
 
     @Override
@@ -117,8 +121,29 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 String msg = writeMsg.getText().toString();
+                if (isWriting) {
+                    Toast.makeText(MainActivity.this, "Please Wait...", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                isWriting = true;
                 //connectionStatus.setText(msg);
-                sendReceive.write(msg.getBytes());
+                if (sendReceive != null)
+                    sendReceive.write(msg.getBytes());
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        isWriting = false;
+                    }
+                }, 1000);
+            }
+        });//end of Send button
+
+        //OnOff button
+        btnOnOff.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mManager.removeGroup(mChannel, null);
+                btnOnOff.setEnabled(false);
             }
         });
 
@@ -128,12 +153,10 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public boolean handleMessage(@NonNull Message msg) {
 
-            switch (msg.what) {
-                case MESSAGE_READ:
-                    byte[] readBuff = (byte[]) msg.obj;
-                    String tempMsg = new String(readBuff, 0, msg.arg1);
-                    read_msg_box.setText(tempMsg);
-                    break;
+            if (msg.what == MESSAGE_READ) {
+                byte[] readBuff = (byte[]) msg.obj;
+                String tempMsg = new String(readBuff, 0, msg.arg1);
+                read_msg_box.setText(tempMsg);
             }
 
             return true;
@@ -155,19 +178,31 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        unregisterReceiver(mReceiver);
+        try {
+            unregisterReceiver(mReceiver);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(mReceiver);
+        try {
+            unregisterReceiver(mReceiver);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        unregisterReceiver(mReceiver);
+        try {
+            unregisterReceiver(mReceiver);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /*
@@ -196,6 +231,11 @@ public class MainActivity extends AppCompatActivity {
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+
+
+        registerReceiver(mReceiver, mIntentFilter);
+        btnSend.setEnabled(false);
+        btnOnOff.setEnabled(false); 
 
 
     }
@@ -245,6 +285,9 @@ public class MainActivity extends AppCompatActivity {
                 clientClass = new ClientClass(groupOwnerAddress);
                 clientClass.start();
             }
+
+            btnSend.setEnabled(true);
+            btnOnOff.setEnabled(true);
 
         }
     };
@@ -324,10 +367,10 @@ public class MainActivity extends AppCompatActivity {
             byte[] buffer = new byte[1024];
             int bytes;
 
-            while (socket != null){
+            while (socket != null) {
                 try {
                     bytes = inputStream.read(buffer);
-                    if(bytes>0){
+                    if (bytes > 0) {
                         handler.obtainMessage(MESSAGE_READ, bytes, -1, buffer).sendToTarget();
                     }
                 } catch (IOException e) {
@@ -336,15 +379,20 @@ public class MainActivity extends AppCompatActivity {
             }
         }//end of run
 
-        public void write(byte[] bytes){
-            try {
-                outputStream.write(bytes);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        public void write(final byte[] bytes) {
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        outputStream.write(bytes);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
         }
 
     }
-
 
 }

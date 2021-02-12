@@ -15,7 +15,7 @@
         android:layout_alignParentTop="true"
         android:layout_marginStart="28dp"
         android:layout_marginTop="55dp"
-        android:text="Wifi On" />
+        android:text="Disconnect" />
 
     <Button
         android:id="@+id/discover"
