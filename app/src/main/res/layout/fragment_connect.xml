@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.Connect.ConnectFragment">
+
+    <RelativeLayout
+        android:id="@+id/connectRL"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="15dp"
+        android:gravity="center"
+        android:layout_margin="10dp"
+        android:orientation="horizontal">
+    <TextView
+        android:id="@+id/search_status_tv"
+        android:layout_width="match_parent"
+        android:layout_toStartOf="@+id/connectRefreshBT"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:textAlignment="center"
+        android:textSize="20sp" />
+        <ImageButton
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:id="@+id/connectRefreshBT"
+            android:layout_alignParentEnd="true"
+            android:background="@drawable/ic_baseline_refresh_24"
+            tools:ignore="ContentDescription" />
+    </RelativeLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:layout_margin="20dp"
+        android:id="@+id/peerRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/connectRL"
+        android:layout_marginTop="25dp" />
+
+</RelativeLayout>
