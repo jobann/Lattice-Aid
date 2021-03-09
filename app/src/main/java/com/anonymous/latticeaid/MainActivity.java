@@ -5,11 +5,14 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.net.wifi.p2p.WifiP2pInfo;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.anonymous.latticeaid.ui.Connect.MyRecyclerViewAdapter;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import androidx.annotation.NonNull;
@@ -20,10 +23,13 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
+import java.net.InetAddress;
+
 public class MainActivity extends AppCompatActivity {
 
+    public static Boolean shouldShowDialog = true;
     AlertDialog dialog;
-    WifiP2pManager.PeerListListener peerListListener = null;
+
 
 
     @Override
@@ -51,7 +57,8 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void refresh() {}
+    public void refresh() {
+    }
 
     private void checkPermission() {
         if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -88,9 +95,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void setPeerListListener(WifiP2pManager.PeerListListener peerListListener) {
-        this.peerListListener = peerListListener;
-    }
 
 
 
