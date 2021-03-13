@@ -12,10 +12,10 @@
         tools:layout="@layout/fragment_connect" />
 
     <fragment
-        android:id="@+id/navigation_dashboard"
-        android:name="com.anonymous.latticeaid.ui.dashboard.DashboardFragment"
+        android:id="@+id/navigation_chat"
+        android:name="com.anonymous.latticeaid.ui.Chat.ChatFragment"
         android:label="@string/title_dashboard"
-        tools:layout="@layout/fragment_dashboard" />
+        tools:layout="@layout/fragment_chat" />
 
     <fragment
         android:id="@+id/navigation_notifications"

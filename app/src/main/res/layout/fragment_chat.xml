@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="15dp"
+    tools:context=".ui.Chat.ChatFragment">
+
+    <TextView
+        android:id="@+id/msgTV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_centerInParent="true"
+        android:layout_margin="50dp"
+        android:layout_marginTop="31dp"
+        android:text="Message"
+        android:textAlignment="center"
+        android:textSize="25sp"
+        android:textStyle="italic" />
+
+    <EditText
+        android:id="@+id/msgET"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:textSize="25sp"
+        android:layout_toStartOf="@+id/sendBT"
+        android:hint="Write message..."
+        android:ems="10"
+        android:inputType="textPersonName" />
+
+    <Button
+        android:id="@+id/sendBT"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:text="Send" />
+</RelativeLayout>
