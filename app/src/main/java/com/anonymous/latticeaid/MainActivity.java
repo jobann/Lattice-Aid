@@ -19,11 +19,15 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
+import android.provider.Settings.Secure;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.anonymous.latticeaid.ui.Chat.ChatFragment;
+import com.anonymous.latticeaid.ui.Chat.MessageListAdapter;
+import com.anonymous.latticeaid.ui.Chat.UserMessage;
 import com.anonymous.latticeaid.ui.Connect.ConnectFragment;
-import com.anonymous.latticeaid.ui.Connect.MyRecyclerViewAdapter;
+import com.anonymous.latticeaid.ui.Connect.ConnectListAdapter;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import androidx.annotation.NonNull;
@@ -34,6 +38,9 @@ import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
+import androidx.recyclerview.widget.RecyclerView;
+
+import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +53,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -57,20 +65,27 @@ public class MainActivity extends AppCompatActivity {
     WifiManager wifiManager;
     IntentFilter mIntentFilter;
     BroadcastReceiver mReceiver;
-    MyRecyclerViewAdapter myRecyclerViewAdapter;
+    ConnectListAdapter connectListAdapter;
     ConnectFragment connectFragment;
     ChatFragment chatFragment;
     NavHostFragment nav_host_fragment;
+    RecyclerView recycler_gchat;
 
     List<WifiP2pDevice> peers = new ArrayList<>();
     List<String> deviceNameArray = new ArrayList<>();
     List<WifiP2pDevice> deviceArray = new ArrayList<>();
 
     static final int MESSAGE_READ = 1;
+    public static final String MESSAGE_CLOSE = "CLOSETHISCONNECTION__112233";
 
     ServerClass serverClass;
     ClientClass clientClass;
     SendReceive sendReceive;
+
+
+    List<UserMessage> userMessagesList = new ArrayList<>();
+    MessageListAdapter messageListAdapter;
+    public static String android_id;
 
 
     @Override
@@ -87,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.navigation_connect, R.id.navigation_chat, R.id.navigation_notifications)
+                R.id.navigation_connect, R.id.navigation_chat, R.id.navigation_profile)
                 .build();
 
 
@@ -103,7 +118,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    @SuppressLint("HardwareIds")
     private void initialWork() {
+
+        //getting Unique Identifier
+        android_id = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
+
+
         mManager = (WifiP2pManager) getSystemService(WIFI_P2P_SERVICE);
         mChannel = mManager.initialize(this, getMainLooper(), null);
         wifiManager = (WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
@@ -113,7 +134,9 @@ public class MainActivity extends AppCompatActivity {
         Fragment currentFragment = nav_host_fragment.getChildFragmentManager().getFragments().get(0);
         if (currentFragment instanceof ConnectFragment) {
             connectFragment = (ConnectFragment) currentFragment;
-            myRecyclerViewAdapter = new MyRecyclerViewAdapter(deviceNameArray, deviceArray, getPeerListListener(), this);
+            connectListAdapter = new ConnectListAdapter(deviceNameArray, deviceArray, getPeerListListener(), this);
+        } else if (currentFragment instanceof ChatFragment) {
+            chatFragment = (ChatFragment) currentFragment;
         }
         mReceiver = new WifiDirectBroadcastReceiver(mManager, mChannel, wifiManager, this);
 
@@ -122,6 +145,9 @@ public class MainActivity extends AppCompatActivity {
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+
+        messageListAdapter = new MessageListAdapter(userMessagesList);
+
         registerReceiver(mReceiver, mIntentFilter);
 
     }
@@ -141,11 +167,11 @@ public class MainActivity extends AppCompatActivity {
                     if (device.deviceName.contains("6488253637")) {
                         deviceNameArray.add(device.deviceName);
                         deviceArray.add(device);
-                        myRecyclerViewAdapter.notifyDataSetChanged();
+                        connectListAdapter.notifyDataSetChanged();
                     }
                 }
 
-                myRecyclerViewAdapter.notifyDataSetChanged();
+                connectListAdapter.notifyDataSetChanged();
 
                 if (peerList.getDeviceList().size() == 0) {
                     Toast.makeText(getBaseContext(), "No Device Found!", Toast.LENGTH_SHORT).show();
@@ -163,6 +189,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -175,9 +202,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
-        unregisterReceiver(mReceiver);
+    public void onDestroy() {
+        super.onDestroy();
+        mManager.removeGroup(mChannel, null);
+        try {
+            unregisterReceiver(mReceiver);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -243,6 +275,9 @@ public class MainActivity extends AppCompatActivity {
             if (info.groupFormed && info.isGroupOwner) {
                 connectFragment.setSearchStatusText("Host");
 
+                if (serverClass != null) {
+                    closeConnection();
+                }
                 serverClass = new ServerClass();
                 serverClass.start();
                 navController.navigate(R.id.navigation_chat);
@@ -259,6 +294,7 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("MissingPermission")
     public void connect(WifiP2pConfig config) {
+        mManager.cancelConnect(mChannel, null);
         try {
             mManager.connect(mChannel, config, new WifiP2pManager.ActionListener() {
                 @Override
@@ -282,13 +318,18 @@ public class MainActivity extends AppCompatActivity {
         return peerListListener;
     }
 
-    public MyRecyclerViewAdapter getMyRecyclerViewAdapter() {
-        return myRecyclerViewAdapter;
+    public ConnectListAdapter getConnectListAdapter() {
+        return connectListAdapter;
+    }
+
+    public MessageListAdapter getMessageListAdapter() {
+        return messageListAdapter;
     }
 
     public NavController getNavController() {
         return navController;
     }
+
 
     Handler handler = new Handler(new Handler.Callback() {
         @Override
@@ -296,15 +337,22 @@ public class MainActivity extends AppCompatActivity {
 
             if (msg.what == MESSAGE_READ) {
                 byte[] readBuff = (byte[]) msg.obj;
-                String tempMsg = new String(readBuff, 0, msg.arg1);
-                //read_msg_box.setText(tempMsg);
-                nav_host_fragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
-                assert nav_host_fragment != null;
-                Fragment currentFragment = nav_host_fragment.getChildFragmentManager().getFragments().get(0);
-                if (currentFragment instanceof ChatFragment) {
-                    chatFragment = (ChatFragment) currentFragment;
-                    chatFragment.setMessageText(tempMsg);
+                String tempMsg = ((UserMessage) SerializationUtils.deserialize(readBuff)).getMessage();
+                if (tempMsg.equals(MESSAGE_CLOSE)) {
+                    Toast.makeText(getApplicationContext(), "Connection Closed", Toast.LENGTH_SHORT).show();
+                    Log.d("JOBANN", "Connection Closed");
+                    closeConnection();
                 }
+                //read_msg_box.setText(tempMsg);
+                UserMessage userMessage = SerializationUtils.deserialize(readBuff);
+                userMessagesList.add(userMessage);
+                messageListAdapter.notifyDataSetChanged();
+                runOnUiThread(() -> {
+                    if (recycler_gchat == null)
+                        recycler_gchat = findViewById(R.id.recycler_gchat);
+                    if (recycler_gchat != null)
+                        recycler_gchat.scrollToPosition(messageListAdapter.getItemCount() - 1);
+                });
             }
 
             return true;
@@ -320,14 +368,36 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                serverSocket = new ServerSocket(8888);
+                serverSocket = new ServerSocket();
+                serverSocket.setReuseAddress(true);
+                serverSocket.bind(new InetSocketAddress(8888));
                 socket = serverSocket.accept();
                 sendReceive = new SendReceive(socket);
                 sendReceive.start();
-            } catch (IOException e) {
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.d("JOBANN", Objects.requireNonNull(e.getMessage()));
+            }
+        }
+
+        public void close() {
+            try {
+                socket.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                serverSocket.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                sendReceive.socket.close();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
+
     }
 
     //Client class
@@ -344,10 +414,18 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             try {
-                socket.connect(new InetSocketAddress(hostAdd, 8888), 500);
+                socket.connect(new InetSocketAddress(hostAdd, 8888), 7000);
                 sendReceive = new SendReceive(socket);
                 sendReceive.start();
             } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void close() {
+            try {
+                socket.close();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -358,6 +436,7 @@ public class MainActivity extends AppCompatActivity {
         private final Socket socket;
         private InputStream inputStream;
         private OutputStream outputStream;
+
 
         //Constructor
         public SendReceive(Socket skt) {
@@ -392,12 +471,44 @@ public class MainActivity extends AppCompatActivity {
             new Thread(() -> {
                 try {
                     outputStream.write(bytes);
-                } catch (IOException e) {
+                    userMessagesList.add(SerializationUtils.deserialize(bytes));
+                    runOnUiThread(() -> messageListAdapter.notifyDataSetChanged());
+                } catch (Exception e) {
                     e.printStackTrace();
+                    closeConnection();
                 }
             }).start();
+
         }
 
+        public void close() {
+            try {
+                inputStream.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                outputStream.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                socket.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    public void closeConnection() {
+        if (sendReceive != null)
+            sendReceive.close();
+        if (serverClass != null)
+            serverClass.close();
+        if (clientClass != null)
+            clientClass.close();
+        runOnUiThread(() -> navController.navigate(R.id.navigation_connect));
     }
 
     public SendReceive getSendReceive() {

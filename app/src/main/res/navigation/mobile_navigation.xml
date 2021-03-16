@@ -14,12 +14,12 @@
     <fragment
         android:id="@+id/navigation_chat"
         android:name="com.anonymous.latticeaid.ui.Chat.ChatFragment"
-        android:label="@string/title_dashboard"
+        android:label="@string/title_chat"
         tools:layout="@layout/fragment_chat" />
 
     <fragment
-        android:id="@+id/navigation_notifications"
-        android:name="com.anonymous.latticeaid.ui.notifications.NotificationsFragment"
-        android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_notifications" />
+        android:id="@+id/navigation_profile"
+        android:name="com.anonymous.latticeaid.ui.Profile.ProfileFragment"
+        android:label="@string/title_profile"
+        tools:layout="@layout/fragment_profile" />
 </navigation>

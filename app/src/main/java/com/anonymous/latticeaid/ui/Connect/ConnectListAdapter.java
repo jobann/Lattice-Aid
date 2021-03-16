@@ -1,11 +1,8 @@
 package com.anonymous.latticeaid.ui.Connect;
 
-import android.app.PendingIntent;
-import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pManager;
-import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,7 +18,7 @@ import com.anonymous.latticeaid.R;
 import java.util.List;
 
 
-public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAdapter.ViewHolder> {
+public class ConnectListAdapter extends RecyclerView.Adapter<ConnectListAdapter.ViewHolder> {
 
     private WifiP2pDevice device;
     private final List<String> deviceNameArray;
@@ -32,8 +29,8 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
 
     // data is passed into the constructor
-    public MyRecyclerViewAdapter(List<String> deviceNameArray, List<WifiP2pDevice> deviceArray,
-                                 WifiP2pManager.PeerListListener peerListListener, MainActivity mActivity) {
+    public ConnectListAdapter(List<String> deviceNameArray, List<WifiP2pDevice> deviceArray,
+                              WifiP2pManager.PeerListListener peerListListener, MainActivity mActivity) {
         this.deviceNameArray = deviceNameArray;
         this.deviceArray = deviceArray;
         this.peerListListener = peerListListener;
@@ -42,14 +39,14 @@ public class MyRecyclerViewAdapter extends RecyclerView.Adapter<MyRecyclerViewAd
 
     @NonNull
     @Override
-    public MyRecyclerViewAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ConnectListAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.recyclerview_row, parent, false);
         return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull MyRecyclerViewAdapter.ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull ConnectListAdapter.ViewHolder holder, int position) {
         String name = position + 1 + ". " + deviceNameArray.get(position).replace("6488253637", "");
         holder.deviceNamesTV.setText(name);
         holder.deviceNamesTV.setOnClickListener(v -> {
