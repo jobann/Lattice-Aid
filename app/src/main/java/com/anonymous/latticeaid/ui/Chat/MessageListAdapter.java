@@ -56,6 +56,8 @@ public class MessageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         if (position != 0) {
             previousDate = userMessagesList.get(position - 1).getDate();
         }
+
+
         switch (holder.getItemViewType()) {
             case VIEW_TYPE_MESSAGE_SENT:
                 if (previousDate == null) {
@@ -81,7 +83,7 @@ public class MessageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                     }
                 }
 
-        }
+        }//end of Switch
 
     }
 
@@ -92,10 +94,14 @@ public class MessageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     @Override
     public int getItemViewType(int position) {
-        if (userMessagesList.get(position).getAndroid_id().equalsIgnoreCase(MainActivity.android_id)) {
-            return VIEW_TYPE_MESSAGE_SENT;
-        } else
-            return VIEW_TYPE_MESSAGE_RECEIVED;
+
+        if (userMessagesList.get(position).getMsgType() == MainActivity.TYPE_MESSAGE) {
+            if (userMessagesList.get(position).getAndroid_id().equalsIgnoreCase(MainActivity.android_id)) {
+                return VIEW_TYPE_MESSAGE_SENT;
+            } else
+                return VIEW_TYPE_MESSAGE_RECEIVED;
+        }
+        return 9999;
     }
 
 

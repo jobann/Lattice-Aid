@@ -8,7 +8,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -75,7 +74,7 @@ public class ConnectFragment extends Fragment {
 
         connectRefreshBT.setOnClickListener(v -> {
             if (((MainActivity) requireActivity()).getSendReceive() != null) {
-                UserMessage userMessage = new UserMessage(MainActivity.MESSAGE_CLOSE, new Date(), MainActivity.android_id);
+                UserMessage userMessage = new UserMessage("", new Date(), MainActivity.android_id, MainActivity.TYPE_CLOSE);
                 ((MainActivity) requireActivity()).getSendReceive().write(SerializationUtils.serialize(userMessage));
                 Log.d("JOBANN", "IF");
             } else {

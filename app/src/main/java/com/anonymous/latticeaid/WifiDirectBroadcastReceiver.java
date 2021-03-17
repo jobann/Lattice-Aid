@@ -14,12 +14,10 @@ import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Build;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 
-import com.anonymous.latticeaid.ui.Connect.ConnectFragment;
 
 
 public class WifiDirectBroadcastReceiver extends BroadcastReceiver {

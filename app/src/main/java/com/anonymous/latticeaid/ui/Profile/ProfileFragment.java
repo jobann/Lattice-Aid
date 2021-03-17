@@ -9,17 +9,25 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.anonymous.latticeaid.MainActivity;
 import com.anonymous.latticeaid.R;
 
 public class ProfileFragment extends Fragment {
 
+    RecyclerView locationRV;
+
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        ProfileViewModel profileViewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
         View root = inflater.inflate(R.layout.fragment_profile, container, false);
-        final TextView textView = root.findViewById(R.id.text_profile);
-        profileViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
+
+        locationRV = root.findViewById(R.id.locationRV);
+        locationRV.setLayoutManager(new LinearLayoutManager(getContext()));
+        locationRV.setAdapter(new ProfileListAdapter(((MainActivity) requireActivity()).getUserLocations()));
+
+
         return root;
     }
 }

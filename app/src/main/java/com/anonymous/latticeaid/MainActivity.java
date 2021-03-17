@@ -7,6 +7,8 @@ import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.net.wifi.p2p.WifiP2pConfig;
@@ -52,8 +54,11 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+
+import io.nlopez.smartlocation.SmartLocation;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -76,7 +81,6 @@ public class MainActivity extends AppCompatActivity {
     List<WifiP2pDevice> deviceArray = new ArrayList<>();
 
     static final int MESSAGE_READ = 1;
-    public static final String MESSAGE_CLOSE = "CLOSETHISCONNECTION__112233";
 
     ServerClass serverClass;
     ClientClass clientClass;
@@ -84,8 +88,14 @@ public class MainActivity extends AppCompatActivity {
 
 
     List<UserMessage> userMessagesList = new ArrayList<>();
+    HashMap<String, Location> userLocations = new HashMap<>();
     MessageListAdapter messageListAdapter;
     public static String android_id;
+
+
+    public static final int TYPE_MESSAGE = 100;
+    public static final int TYPE_GPS = 101;
+    public static final int TYPE_CLOSE = 102;
 
 
     @Override
@@ -270,7 +280,17 @@ public class MainActivity extends AppCompatActivity {
             InetAddress groupOwnerAddress = info.groupOwnerAddress;
             //search_status_tv = root.findViewById(R.id.search_status_tv);
 
-
+            //Initialising Location Object
+            SmartLocation.with(getApplicationContext()).location().oneFix()
+                    .start(location -> {
+                        double lat = location.getLatitude();
+                        double lng = location.getLongitude();
+                        //Toast.makeText(requireContext(), "Latitude: " + lat + "\nLongitude:" + lng, Toast.LENGTH_SHORT).show();
+                        UserMessage userMessage = new UserMessage(MainActivity.android_id, lat, lng, MainActivity.TYPE_GPS);
+                        if (sendReceive != null) {
+                            sendReceive.write(SerializationUtils.serialize(userMessage));
+                        }
+                    });
             //String connectionInfo = "Connected to " + device.deviceName;
             if (info.groupFormed && info.isGroupOwner) {
                 connectFragment.setSearchStatusText("Host");
@@ -330,6 +350,9 @@ public class MainActivity extends AppCompatActivity {
         return navController;
     }
 
+    public HashMap<String, Location> getUserLocations() {
+        return userLocations;
+    }
 
     Handler handler = new Handler(new Handler.Callback() {
         @Override
@@ -337,22 +360,32 @@ public class MainActivity extends AppCompatActivity {
 
             if (msg.what == MESSAGE_READ) {
                 byte[] readBuff = (byte[]) msg.obj;
-                String tempMsg = ((UserMessage) SerializationUtils.deserialize(readBuff)).getMessage();
-                if (tempMsg.equals(MESSAGE_CLOSE)) {
-                    Toast.makeText(getApplicationContext(), "Connection Closed", Toast.LENGTH_SHORT).show();
-                    Log.d("JOBANN", "Connection Closed");
-                    closeConnection();
-                }
-                //read_msg_box.setText(tempMsg);
+
                 UserMessage userMessage = SerializationUtils.deserialize(readBuff);
-                userMessagesList.add(userMessage);
-                messageListAdapter.notifyDataSetChanged();
-                runOnUiThread(() -> {
-                    if (recycler_gchat == null)
-                        recycler_gchat = findViewById(R.id.recycler_gchat);
-                    if (recycler_gchat != null)
-                        recycler_gchat.scrollToPosition(messageListAdapter.getItemCount() - 1);
-                });
+
+                switch (userMessage.getMsgType()) {
+                    case TYPE_CLOSE:
+                        Toast.makeText(getApplicationContext(), "Connection Closed", Toast.LENGTH_SHORT).show();
+                        closeConnection();
+                        break;
+                    case TYPE_MESSAGE:
+                        userMessagesList.add(userMessage);
+                        messageListAdapter.notifyDataSetChanged();
+                        runOnUiThread(() -> {
+                            if (recycler_gchat == null)
+                                recycler_gchat = findViewById(R.id.recycler_gchat);
+                            if (recycler_gchat != null)
+                                recycler_gchat.scrollToPosition(messageListAdapter.getItemCount() - 1);
+                        });
+                        break;
+                    case TYPE_GPS:
+                        double lat = userMessage.getLatitude();
+                        double lng = userMessage.getLongitude();
+                        userLocations.put(userMessage.getAndroid_id(), createLocation(lat, lng));
+                        Log.d("JOBANN", userLocations.toString());
+                        break;
+                }
+
             }
 
             return true;
@@ -471,8 +504,11 @@ public class MainActivity extends AppCompatActivity {
             new Thread(() -> {
                 try {
                     outputStream.write(bytes);
-                    userMessagesList.add(SerializationUtils.deserialize(bytes));
-                    runOnUiThread(() -> messageListAdapter.notifyDataSetChanged());
+                    UserMessage userMessage = SerializationUtils.deserialize(bytes);
+                    if (userMessage.getMsgType() == TYPE_MESSAGE) {
+                        userMessagesList.add(userMessage);
+                        runOnUiThread(() -> messageListAdapter.notifyDataSetChanged());
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                     closeConnection();
@@ -513,5 +549,13 @@ public class MainActivity extends AppCompatActivity {
 
     public SendReceive getSendReceive() {
         return sendReceive;
+    }
+
+    public Location createLocation(double lat, double lng) {
+        Location loc = new Location(LocationManager.GPS_PROVIDER);
+        loc.setLatitude(lat);
+        loc.setLongitude(lng);
+
+        return loc;
     }
 }
