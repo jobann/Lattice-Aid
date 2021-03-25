@@ -49,8 +49,16 @@ public class MessageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        String message = userMessagesList.get(position).getMessage();
-        Date date = userMessagesList.get(position).getDate();
+        String message;
+        Date date;
+        assert userMessagesList != null;
+        try {
+            message = userMessagesList.get(position).getMessage();
+            date = userMessagesList.get(position).getDate();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
         Date previousDate = null;
 
         if (position != 0) {
@@ -95,11 +103,15 @@ public class MessageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     @Override
     public int getItemViewType(int position) {
 
-        if (userMessagesList.get(position).getMsgType() == MainActivity.TYPE_MESSAGE) {
-            if (userMessagesList.get(position).getAndroid_id().equalsIgnoreCase(MainActivity.android_id)) {
-                return VIEW_TYPE_MESSAGE_SENT;
-            } else
-                return VIEW_TYPE_MESSAGE_RECEIVED;
+        try {
+            if (userMessagesList.get(position).getMsgType() == MainActivity.TYPE_MESSAGE) {
+                if (userMessagesList.get(position).getAndroid_id().equalsIgnoreCase(MainActivity.android_id)) {
+                    return VIEW_TYPE_MESSAGE_SENT;
+                } else
+                    return VIEW_TYPE_MESSAGE_RECEIVED;
+            }
+        } catch (Exception e) {
+            Log.d("JOBANN", e.getMessage());
         }
         return 9999;
     }
@@ -157,7 +169,11 @@ public class MessageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     String getFormatDate(Date date) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MMM-yyyy", Locale.getDefault());
-        return dateFormat.format(date);
+        try {
+            return dateFormat.format(date);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     String getFormatTime(Date date) {

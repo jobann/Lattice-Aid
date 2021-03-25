@@ -73,6 +73,12 @@ public class ConnectFragment extends Fragment {
 
 
         connectRefreshBT.setOnClickListener(v -> {
+            try {
+                wifiManager.setWifiEnabled(false);
+                wifiManager.setWifiEnabled(true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             if (((MainActivity) requireActivity()).getSendReceive() != null) {
                 UserMessage userMessage = new UserMessage("", new Date(), MainActivity.android_id, MainActivity.TYPE_CLOSE);
                 ((MainActivity) requireActivity()).getSendReceive().write(SerializationUtils.serialize(userMessage));
@@ -97,6 +103,8 @@ public class ConnectFragment extends Fragment {
                     }
                 });
             }
+            requireActivity().finish();
+            startActivity(requireActivity().getIntent());
         });
 
         return root;

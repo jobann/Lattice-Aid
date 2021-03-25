@@ -19,15 +19,14 @@ import android.widget.Toast;
 import androidx.core.app.ActivityCompat;
 
 
-
 public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
 
     private final WifiP2pManager mManager;
     private final WifiP2pManager.Channel mChannel;
     private final MainActivity mActivity;
     private final WifiManager wifiManager;
-    private AlertDialog dialog;
     private Context context;
+    boolean isShown = false;
 
 
     public WifiDirectBroadcastReceiver(WifiP2pManager mManager, WifiP2pManager.Channel mChannel, WifiManager wifiManager, MainActivity mActivity) {
@@ -47,16 +46,6 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
         if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {
             int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
 
-            //if wifi is on
-            if (state == WifiP2pManager.WIFI_P2P_STATE_ENABLED) {
-                Toast.makeText(context, "Wifi is ON", Toast.LENGTH_SHORT).show();
-                if (dialog != null)
-                    dialog.dismiss();
-            } else if (state == WifiP2pManager.WIFI_P2P_STATE_DISABLED) {//if wifi is off
-                Toast.makeText(context, "Wifi is OFF", Toast.LENGTH_SHORT).show();
-
-                showDialog(context);
-            }
 
         }//Handling connection peers list
         else if (WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION.equals(action)) {
@@ -95,9 +84,8 @@ public class WifiDirectBroadcastReceiver extends BroadcastReceiver {
             ((Activity) context).finish();
             System.exit(0);
         });
-        dialog = builder.create();
-
-        dialog.show();
+        AlertDialog dialog1 = builder.create();
+        dialog1.show();
     }
 
 
